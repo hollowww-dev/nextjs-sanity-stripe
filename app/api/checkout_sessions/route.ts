@@ -6,7 +6,6 @@ import { parseCartItem, parseLineItem } from "@/lib/utils";
 import { client } from "@/sanity/lib/client";
 import { PRODUCTS_QUERYResult } from "@/sanity.types";
 import { PRODUCTS_QUERY } from "@/sanity/lib/queries";
-import { headers } from "next/headers";
 
 export async function POST(req: NextRequest) {
 	const { cartDetails }: { cartDetails: CartDetails } = await req.json();
@@ -20,8 +19,8 @@ export async function POST(req: NextRequest) {
 		const session = await stripe.checkout.sessions.create({
 			payment_method_types: ["card"],
 			mode: "payment",
-			success_url: `${headers().get("origin")}/success`,
-			cancel_url: `${headers().get("origin")}`,
+			success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/return/{CHECKOUT_SESSION_ID}`,
+			cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}`,
 			line_items,
 		});
 		return NextResponse.json({ sessionId: session.id }, { status: 200 });

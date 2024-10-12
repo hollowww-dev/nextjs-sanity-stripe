@@ -14,7 +14,7 @@ const Cart = () => {
 	const { cartCount, formattedTotalPrice, shouldDisplayCart, handleCartClick, cartDetails, redirectToCheckout } = useShoppingCart();
 	const handleClick = async () => {
 		setCheckoutLoading(true);
-		const response = await fetch("/api/checkout_sessions", {
+		const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/checkout_sessions`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -40,7 +40,7 @@ const Cart = () => {
 				<SheetHeader>
 					<SheetTitle>Cart ({cartCount})</SheetTitle>
 				</SheetHeader>
-				{cartDetails ? (
+				{cartDetails &&
 					Object.values(cartDetails).map((entry: CartEntry) => (
 						<Card key={entry.id}>
 							<CardContent className="flex items-center px-3 py-0">
@@ -59,13 +59,10 @@ const Cart = () => {
 								</CardHeader>
 							</CardContent>
 						</Card>
-					))
-				) : (
-					<p>Cart is empty</p>
-				)}
-				<SheetFooter className="flex-row justify-between sm:justify-between items-center">
+					))}
+				<SheetFooter className="flex-row mt-auto justify-between sm:justify-between items-center">
 					<p>Total: {formattedTotalPrice}</p>
-					<Button size="lg" onClick={handleClick} disabled={checkoutLoading}>
+					<Button size="lg" onClick={handleClick} disabled={checkoutLoading || !cartCount}>
 						{checkoutLoading ? "Redirecting..." : "Checkout"}
 					</Button>
 				</SheetFooter>

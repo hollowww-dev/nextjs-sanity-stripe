@@ -8,23 +8,42 @@ import { CartEntry } from "use-shopping-cart/core";
 import Image from "next/image";
 import productNoImage from "@/assets/productNoImage.jpg";
 import { useState } from "react";
+import { createCheckoutSession } from "@/actions";
+
+const CartItem = ({ entry }: { entry: CartEntry }) => {
+	return (
+		<Card>
+		<CardContent className="flex items-center px-3 py-0">
+			<Image
+				src={entry.image || productNoImage.src}
+				alt={entry.name}
+				width={50}
+				height={50}
+				className="rounded-full p-1 border"
+			/>
+			<CardHeader>
+				<CardTitle>
+					{entry.name} {entry.quantity > 1 && `(${entry.quantity})`}
+				</CardTitle>
+				<CardDescription>{entry.formattedValue}</CardDescription>
+			</CardHeader>
+		</CardContent>
+	</Card>
+	);
+};
 
 const Cart = () => {
 	const [checkoutLoading, setCheckoutLoading] = useState(false);
 	const { cartCount, formattedTotalPrice, shouldDisplayCart, handleCartClick, cartDetails, redirectToCheckout } = useShoppingCart();
 	const handleClick = async () => {
-		setCheckoutLoading(true);
-		const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/checkout_sessions`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ cartDetails }),
-		});
-		const { sessionId, error } = await response.json();
-		if (sessionId && !error) {
-			await redirectToCheckout(sessionId);
-		} else {
+		try {
+			setCheckoutLoading(true);
+			if (!cartDetails) {
+				throw new Error("No cart details");
+			}
+			const { sessionId } = await createCheckoutSession(cartDetails);
+			await redirectToCheckout(sessionId)
+		} catch (error) {
 			setCheckoutLoading(false);
 			console.log(error);
 		}
@@ -41,25 +60,7 @@ const Cart = () => {
 					<SheetTitle>Cart ({cartCount})</SheetTitle>
 				</SheetHeader>
 				{cartDetails &&
-					Object.values(cartDetails).map((entry: CartEntry) => (
-						<Card key={entry.id}>
-							<CardContent className="flex items-center px-3 py-0">
-								<Image
-									src={entry.image || productNoImage.src}
-									alt={entry.name}
-									width={50}
-									height={50}
-									className="rounded-full p-1 border"
-								/>
-								<CardHeader>
-									<CardTitle>
-										{entry.name} {entry.quantity > 1 && `(${entry.quantity})`}
-									</CardTitle>
-									<CardDescription>{entry.formattedValue}</CardDescription>
-								</CardHeader>
-							</CardContent>
-						</Card>
-					))}
+					Object.values(cartDetails).map((entry: CartEntry) => <CartItem entry={entry} key={entry.id} />)}
 				<SheetFooter className="flex-row mt-auto justify-between sm:justify-between items-center">
 					<p>Total: {formattedTotalPrice}</p>
 					<Button size="lg" onClick={handleClick} disabled={checkoutLoading || !cartCount}>

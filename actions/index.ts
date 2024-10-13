@@ -1,18 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+"use server"
+
 import stripe from "@/lib/stripe";
-import { CartDetails } from "use-shopping-cart/core";
+import { type CartDetails } from "use-shopping-cart/core";
 import { validateCartItems } from "use-shopping-cart/utilities";
-import { parseCartItem, parseLineItem } from "@/lib/utils";
+import { parseCartItem } from "@/lib/utils";
 import { client } from "@/sanity/lib/client";
 import { PRODUCTS_QUERYResult } from "@/sanity.types";
 import { PRODUCTS_QUERY } from "@/sanity/lib/queries";
 
-export async function POST(req: NextRequest) {
-	const { cartDetails }: { cartDetails: CartDetails } = await req.json();
-	const line_items = Object.values(cartDetails).map(item => parseLineItem(item));
+export async function createCheckoutSession(cartDetails: CartDetails): Promise<{ sessionId: string }> {
+    if (!process.env.NEXT_PUBLIC_BASE_URL) {
+        throw new Error("NEXT_PUBLIC_BASE_URL is not defined.");
+      }
 	try {
 		const products: PRODUCTS_QUERYResult = await client.fetch(PRODUCTS_QUERY);
-		validateCartItems(
+		const line_items = validateCartItems(
 			products.map(item => parseCartItem(item)),
 			cartDetails
 		);
@@ -23,9 +25,13 @@ export async function POST(req: NextRequest) {
 			cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}`,
 			line_items,
 		});
-		return NextResponse.json({ sessionId: session.id }, { status: 200 });
+		return { sessionId: session.id };
 	} catch (error) {
-		console.log(error);
-		return NextResponse.json({ error: "Error creating checkout session" }, { status: 400 });
+		console.error(error);
+        if (error instanceof Error) {
+            throw new Error(`Failed to create checkout session: ${error.message}`);
+          } else {
+            throw new Error("An unknown error occurred while creating the checkout session");
+          }
 	}
 }

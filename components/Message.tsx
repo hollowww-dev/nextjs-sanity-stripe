@@ -5,26 +5,28 @@ import { useEffect } from "react";
 import type Stripe from "stripe";
 import { useShoppingCart } from "use-shopping-cart";
 
-const Message = ({ session }: { session: Stripe.Checkout.Session }) => {
+const Message = ({ status }: { status: Stripe.Checkout.Session.PaymentStatus }) => {
 	const { cartCount, clearCart } = useShoppingCart();
 
 	useEffect(() => {
-		if (cartCount && session?.payment_status === "paid") {
+		if (cartCount && status === "paid") {
 			clearCart();
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [cartCount, session]);
+	}, [cartCount, status]);
 
 	return (
-		<>
-			<p>Thank you for your purchase!</p>
-			<p>
-				Confirmation has been sent to <strong>{session.customer_details?.email}</strong>
-			</p>
+		<section className="p-2 text-center">
+			{status === "paid" ? (
+				<>
+					<p>Thank you for supporting us!</p>
+					<p>Confirmation has been sent to your email.</p>
+				</>
+			) : <p>Something went wrong. Please check your payment details and try again.</p>}
 			<Link href="/" className="underline">
 				Continue shopping
 			</Link>
-		</>
+		</section>
 	);
 };
 
